@@ -1,6 +1,6 @@
 def count_nucleotides(file_name):
     with open(file_name, 'r') as f:
-        sequence = f.read().replace('\n', '')
+        sequence = f.read().rstrip()
     my_dict = {'adenine': 0, 'cytosine': 0, 'guanine': 0, 'thymine': 0}
     for n in sequence:
         if n == 'A':
@@ -16,7 +16,7 @@ def count_nucleotides(file_name):
 
 def transcribe(file_name):
     with open(file_name, 'r') as f:
-        sequence = f.read().replace('\n', '')
+        sequence = f.read().rstrip()
     sequence = sequence.replace('T', 'U')
     return sequence
 
@@ -24,7 +24,7 @@ def transcribe(file_name):
 def complement(file_name):
     comp_seq = ''
     with open(file_name, 'r') as f:
-        sequence = f.read().replace('\n', '')
+        sequence = f.read().rstrip()
     sequence = sequence[::-1]
     for n in sequence:
         if n == 'A':
@@ -54,13 +54,13 @@ def gc_content(file_name):
     winner = ''
     record = 0
     with open(file_name, 'r') as f:
-        lines = f.readlines()
+        lines = f.read().splitlines()
     for i in range(len(lines)):
         if lines[i][0] == '>':
-            seq_label = lines[i][1:].rstrip()
+            seq_label = lines[i][1:]
             sequences[seq_label] = ''
         else:
-            sequences[seq_label] += lines[i].rstrip()
+            sequences[seq_label] += lines[i]
     for item in sequences.items():
         sequence = item[1]
         for n in sequence:
@@ -125,7 +125,7 @@ def translate(file_name):
             elif codon in ['UAU', 'UAC']:
                 peptide.append('Y')
             elif codon in ['UAA', 'UAG', 'UGA']:
-                return ''.join(peptide)
+                return peptide.join('')
             elif codon in ['UGU', 'UGC']:
                 peptide.append('C')
             elif codon == 'UGG':
@@ -167,7 +167,7 @@ def translate(file_name):
                 peptide.append('E')
             elif codon[1] == 'G':
                 peptide.append('G')
-    return ''.join(peptide)
+    return peptide.join('')
 
 
 def find_motif(file_name):
@@ -189,13 +189,13 @@ def profiling(file_name):
     max_num = 0
     cons_nuc = []
     with open(file_name, 'r') as f:
-        lines = f.readlines()
+        lines = f.read().splitlines()
     for i in range(len(lines)):
         if lines[i][0] == '>':
             index += 1
             sequences.append('')
         else:
-            sequences[index] += lines[i].rstrip()
+            sequences[index] += lines[i]
     length = len(sequences[0])
     list_a = [0] * length
     list_t = [0] * length
@@ -233,14 +233,14 @@ def overlap(file_name, o):
     seq_labels = []
     result = []
     with open(file_name, 'r') as f:
-        lines = f.readlines()
+        lines = f.read().splitlines()
     for i in range(len(lines)):
         if lines[i][0] == '>':
             index += 1
-            seq_labels.append(lines[i][1:].rstrip())
+            seq_labels.append(lines[i][1:])
             sequences.append('')
         else:
-            sequences[index] += lines[i].rstrip()
+            sequences[index] += lines[i]
     for j in range(len(sequences)):
         for i in range(len(sequences)):
             if i != j and sequences[i][:o] == sequences[j][-o:]:
@@ -260,13 +260,13 @@ def shared_motif(file_name):
     motifs = []
     record = 0
     with open(file_name, 'r') as f:
-        lines = f.readlines()
+        lines = f.read().splitlines()
     for i in range(len(lines)):
         if lines[i][0] == '>':
             index += 1
             sequences.append('')
         else:
-            sequences[index] += lines[i].rstrip()
+            sequences[index] += lines[i]
     seq_one = sequences[0]
     others = sequences[1:]
     length = len(seq_one)
@@ -297,4 +297,28 @@ def probability(k, n):
     for i in range(n, total + 1):
         ncr = factorial(total) / (factorial(i) * factorial(total - i))
         result += ncr * (0.25 ** i) * (0.75 ** (total - i))
+    return result
+
+
+def protein_motif(filename):
+    import urllib.request
+    address = 'http://www.uniprot.org/uniprot/'
+    result = []
+    index = -1
+    with open(filename, 'r') as f:
+        ids = f.read().splitlines()
+    for protein_id in ids:
+        result.append(protein_id)
+        result.append('')
+        index += 2
+        entry = urllib.request.urlopen(address + protein_id + '.fasta').read()
+        raw = entry.decode("utf-8").splitlines()
+        protein = ''.join(raw[1: len(raw)])
+        for i in range(len(protein) - 3):
+            if protein[i] == 'N' and protein[i + 1] != 'P':
+                if protein[i + 2] in ('S', 'T') and protein[i + 3] != 'P':
+                    if result[index] == '':
+                        result[index] = str(i + 1)
+                    else:
+                        result[index] += ' ' + str(i + 1)
     return result
